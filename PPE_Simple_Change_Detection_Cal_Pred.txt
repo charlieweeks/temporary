@@ -1,0 +1,68 @@
+model{
+
+ for(j in 1:Num_Cal){
+ 
+    Learning_Rate[j] = ( a[w[j]] + N[j] ) ^ .1
+    Decay_Rate[j]    = T_var[j] ^ -( b[w[j]] + m[w[j]] * CumAveInvLogTime_diff_lag1[j] ) 
+    M[j]             = Learning_Rate[j] * Decay_Rate[j]
+    pred[j]          = ( 1 / (1 + exp( ( (tau[w[j]] - M[j]) /.1 ) ) ) )
+ 
+  }
+  
+  for(k in 1:Num_Cal){
+    Perf[k]       ~ dbeta( pred[k]  * (k_par[w[k]] ) + 1, ( 1-pred[k] ) * (k_par[w[k]]) + 1 )
+    Prediction[k] ~ dbeta( pred[k]  * (k_par[w[k]] ) + 1, ( 1-pred[k] ) * (k_par[w[k]]) + 1 )
+  
+  }
+  
+  
+  for(j in (Num_Cal+1) : Num_Rounds){
+    for(k in 1:(gamma+1) ){
+      OS_Learning_Rate[j,k] = ( a[k] + N[j] ) ^ .1
+      OS_Decay_Rate[j,k]    = T_var[j] ^ -( b[k] + m[k] * CumAveInvLogTime_diff_lag1[j] ) 
+      OS_M[j,k]             = OS_Learning_Rate[j,k] * OS_Decay_Rate[j,k]
+      OS_pred[j, k]          = ( 1 / (1 + exp( ( (tau[k] - OS_M[j,k]) /.1 ) ) ) )
+    }
+  }
+  #----------------------------------
+  for(k in (Num_Cal+1) : Num_Rounds){
+    for(l in 1:(gamma+1) ){
+      OS_Prediction[k,l] ~ dbeta( OS_pred[k,l]  * (k_par[l] ) + 1, ( 1 - OS_pred[k,l] ) * (k_par[l]) + 1 )
+   }
+  }
+  #----------------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------------------------------
+  #Now Define the Changes in the model
+  for(j in 1:Num_Cal){
+    for (k in 1:gamma){
+      wTmp[j, k] = step(j - tau_Ordered[k])
+    }
+     
+  #stage for time period
+    w[j] = sum(wTmp[ j, 1:gamma]) + 1
+  }
+  #---------------------------------------------------------------------------------------------
+ #PPE Parameters
+ for(i in 1 : (gamma + 1) ){
+    b[i]         ~  dbeta(     .01  * 2500   + 1,   (1 - .01)      * 2500 + 1 )T(0, .25)
+    m[i]         ~  dbeta(     .01  * 2500   + 1,   (1 - .01)      * 2500 + 1 )T(0, .25)
+    a[i]         ~  dbeta(     .01  * 10   + 1,   (1 - .01)      * 10  + 1 ) 
+    tau[i]       ~  dbeta(     .65  * 10   + 1,   (1 - .65)      * 10  + 1 )
+    k_par[i]     ~  dunif(900, 1000)
+    }
+#---------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------  
+  # Select potential change points
+  for (k in 1:gamma){
+    tauPrime[k] ~ dcat( Spike_Slabe_Prior )
+  }
+  
+  #Order the change points from min to max 
+  tau_Ordered[1:gamma] =  sort( tauPrime )
+  #sort(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14))
+  #
+
+}
+
+

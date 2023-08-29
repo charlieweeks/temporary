@@ -1,0 +1,41 @@
+
+model{
+
+for(i in 1:N){
+              DV[i] ~ dgamma(Shape, Rate )
+   RT_Prediction[i] ~ dgamma(Shape, Rate)
+}
+
+#----------------------------------------------------------------------------------------------- 
+  Stage      ~ dcat(c(1,1,1))
+#----------------------------------------------------------------------------------------------- 
+#--------------------
+#--------------------
+# Mean
+Cog_mean ~ dnorm( 8469.779 , 1/(1000^2))T(0,)
+Ass_mean ~ dnorm( 3146.525 , 1/(500^2))T(0,)
+Pro_mean ~ dnorm( 1334.677 , 1/(200^2))T(0,)
+#--------------------------------------------------------------------
+# Standard Deviations
+Cog_SD ~ dnorm(5411.195 ,  1/(500^2) )T(0,)
+Ass_SD ~ dnorm(1940.442 ,  1/(500^2) )T(0,)
+Pro_SD ~ dnorm(715.891  ,  1/(500^2) )T(0,)
+#--------------------------------------------------------------------
+# Create Shape and Rate Parameters
+Cog_Shape = Cog_mean^2/Cog_SD^2
+Ass_Shape = Ass_mean^2/Ass_SD^2
+Pro_Shape = Pro_mean^2/Pro_SD^2
+#------------------------------
+Cog_Rate = Cog_mean / Cog_SD^2
+Ass_Rate = Ass_mean / Ass_SD^2
+Pro_Rate = Pro_mean / Pro_SD^2
+#---------------------------------------------------------------------------------------------
+Cog_Prior ~ dgamma( Cog_Shape,  Cog_Rate )
+Ass_Prior ~ dgamma( Ass_Shape,  Ass_Rate )
+Pro_Prior ~ dgamma( Pro_Shape,  Pro_Rate )
+#--------------------------------------------------------------------------------------------
+Shape  = equals(Stage, 1) * Cog_Shape + equals(Stage, 2) * Ass_Shape + equals(Stage, 3) * Pro_Shape
+Rate   = equals(Stage, 1) * Cog_Rate  + equals(Stage, 2) * Ass_Rate  + equals(Stage, 3) * Pro_Rate
+#--------------------------------------------------------------------------------------------
+}
+
